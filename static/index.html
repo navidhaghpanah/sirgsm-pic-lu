@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sirgsm Pic Lu — جستجوی هوشمند عکس‌ها</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card-soft: #162033;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --accent-hover: #0ea5e9;
+      --danger: #f43f5e;
+      --danger-hover: #e11d48;
+      --success: #34d399;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Tahoma, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem 3rem;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; }
+    header { text-align: center; margin-bottom: 1.8rem; }
+    header h1 { font-size: 1.95rem; margin-bottom: 0.45rem; color: var(--accent); }
+    header p { color: var(--muted); font-size: 0.94rem; }
+    header .credits { margin-top: 0.45rem; font-size: 0.82rem; }
+    header .credits a { color: var(--accent); text-decoration: none; }
+    header .credits a:hover { text-decoration: underline; }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.15rem 1.25rem;
+      margin-bottom: 1.15rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .panel-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+    }
+    input[type="text"] {
+      flex: 1;
+      min-width: 220px;
+      padding: 0.72rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.96rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: var(--accent); }
+
+    select {
+      padding: 0.72rem 0.85rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 0.9rem;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: var(--accent); }
+
+    button {
+      padding: 0.72rem 1.3rem;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #0f172a;
+      font-weight: 700;
+      font-size: 0.92rem;
+      cursor: pointer;
+      transition: background 0.18s, opacity 0.18s;
+      white-space: nowrap;
+    }
+    button:hover:not(:disabled) { background: var(--accent-hover); }
+    button:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(148, 163, 184, 0.12);
+      border-color: var(--muted);
+    }
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+    }
+    .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+
+    .options-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.2rem;
+      font-size: 0.84rem;
+      color: var(--muted);
+      align-items: center;
+    }
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.42rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-label input { accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+
+    /* Progress bar */
+    .progress-wrap {
+      display: none;
+      flex-direction: column;
+      gap: 0.4rem;
+      padding-top: 0.2rem;
+    }
+    .progress-wrap.active { display: flex; }
+    .progress-track {
+      width: 100%;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-hover), var(--accent));
+      border-radius: 999px;
+      transition: width 0.25s ease;
+    }
+    .progress-bar.indeterminate {
+      width: 35% !important;
+      animation: pulseSlide 1.3s ease-in-out infinite alternate;
+    }
+    @keyframes pulseSlide {
+      from { transform: translateX(0%); }
+      to { transform: translateX(-185%); }
+    }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .alert-box {
+      display: none;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      font-size: 0.88rem;
+      border: 1px solid rgba(244, 63, 94, 0.45);
+      background: rgba(244, 63, 94, 0.12);
+      color: #fecdd3;
+    }
+    .alert-box.show { display: block; }
+
+    .status {
+      font-size: 0.88rem;
+      color: var(--muted);
+      margin-bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .device-pill {
+      font-size: 0.76rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      direction: ltr;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: 2.5rem 1rem;
+      background: var(--card-soft);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      font-size: 0.92rem;
+      display: none;
+    }
+    .empty-state.show { display: block; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .card:hover { transform: translateY(-3px); border-color: var(--accent); }
+    .card img {
+      width: 100%;
+      height: 185px;
+      object-fit: cover;
+      display: block;
+      background: #020617;
+    }
+    .card-info {
+      padding: 0.62rem 0.75rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .filename {
+      font-size: 0.82rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text);
+      direction: ltr;
+      text-align: left;
+    }
+    .badge {
+      font-size: 0.75rem;
+      background: rgba(56, 189, 248, 0.15);
+      color: var(--accent);
+      padding: 0.18rem 0.45rem;
+      border-radius: 6px;
+      flex-shrink: 0;
+      direction: ltr;
+    }
+
+    /* Lightbox Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.9);
+      z-index: 100;
+      justify-content: center;
+      align-items: center;
+      padding: 1.25rem;
+    }
+    .modal.open { display: flex; }
+    .modal-content {
+      max-width: 92vw;
+      max-height: 92vh;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.65rem;
+    }
+    .modal-content img {
+      max-width: 90vw;
+      max-height: 76vh;
+      border-radius: 10px;
+      object-fit: contain;
+      background: #020617;
+      border: 1px solid var(--border);
+    }
+    .modal-path {
+      color: var(--muted);
+      font-size: 0.82rem;
+      direction: ltr;
+      word-break: break-all;
+      max-width: 85vw;
+    }
+    .modal-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      justify-content: center;
+    }
+    .modal-actions button {
+      padding: 0.48rem 0.95rem;
+      font-size: 0.82rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Sirgsm Pic Lu — جستجوی هوشمند عکس‌ها</h1>
+      <p>با هوش مصنوعی (CLIP) عکس‌های سیستم خود را بر اساس محتوا پیدا کنید — مثلاً بنویسید «دریا»، «گربه»، «غروب» یا «sea»</p>
+      <p class="credits">
+        ساخته‌شده توسط <strong>NH</strong> | اسپانسر:
+        <a href="https://sirgsm.ir" target="_blank" rel="noopener noreferrer">sirgsm.ir</a>
+      </p>
+    </header>
+
+    <div class="panel">
+      <div class="panel-row">
+        <input
+          type="text"
+          id="folderInput"
+          placeholder="مسیر پوشه عکس‌ها (مثلاً C:\Users\Name\Pictures یا ~/Pictures)"
+          dir="ltr"
+          autocomplete="off"
+        />
+        <button type="button" class="btn-secondary" id="browseBtn">انتخاب پوشه…</button>
+        <button type="button" id="indexBtn">ایندکس پوشه</button>
+        <button type="button" class="btn-danger" id="cancelBtn" style="display: none;">لغو</button>
+      </div>
+      <div class="options-row">
+        <label class="checkbox-label" title="عکس‌های پوشه جدید به ایندکس قبلی اضافه می‌شوند">
+          <input type="checkbox" id="appendCheck" />
+          <span>افزودن به پوشه‌های قبلی</span>
+        </label>
+        <label class="checkbox-label" title="نادیده گرفتن کش قبلی و پردازش مجدد همه عکس‌ها">
+          <input type="checkbox" id="forceCheck" />
+          <span>بازسازی کامل کش</span>
+        </label>
+      </div>
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-track">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-meta">
+          <span id="progressDetail"></span>
+          <span id="progressPercent"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-row">
+        <input
+          type="text"
+          id="searchInput"
+          placeholder="چی دنبالشی؟ (مثلاً: دریا، کوه، ماشین قرمز، گربه...)"
+          autocomplete="off"
+        />
+        <select id="topKSelect" title="تعداد نتایج نمایش داده‌شده">
+          <option value="12">۱۲ نتیجه</option>
+          <option value="24" selected>۲۴ نتیجه</option>
+          <option value="48">۴۸ نتیجه</option>
+          <option value="96">۹۶ نتیجه</option>
+        </select>
+        <button type="button" id="searchBtn">جستجو</button>
+      </div>
+    </div>
+
+    <div class="alert-box" id="alertBox" role="alert"></div>
+
+    <div class="status">
+      <span id="statusText">در حال بررسی وضعیت...</span>
+      <span class="device-pill" id="devicePill" style="display: none;"></span>
+    </div>
+
+    <div class="empty-state" id="emptyState">نتیجه‌ای برای نمایش وجود ندارد.</div>
+    <div class="grid" id="resultsGrid"></div>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content" id="modalContent">
+      <img id="modalImg" src="" alt="" />
+      <div class="modal-path" id="modalPath"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="copyPathBtn">کپی مسیر</button>
+        <button type="button" class="btn-secondary" id="revealBtn">نمایش در پوشه</button>
+        <button type="button" class="btn-secondary" id="closeModalBtn">بستن (Esc)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const folderInput = document.getElementById('folderInput');
+    const browseBtn = document.getElementById('browseBtn');
+    const indexBtn = document.getElementById('indexBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    const appendCheck = document.getElementById('appendCheck');
+    const forceCheck = document.getElementById('forceCheck');
+    const progressWrap = document.getElementById('progressWrap');
+    const progressBar = document.getElementById('progressBar');
+    const progressDetail = document.getElementById('progressDetail');
+    const progressPercent = document.getElementById('progressPercent');
+    const searchInput = document.getElementById('searchInput');
+    const topKSelect = document.getElementById('topKSelect');
+    const searchBtn = document.getElementById('searchBtn');
+    const alertBox = document.getElementById('alertBox');
+    const statusText = document.getElementById('statusText');
+    const devicePill = document.getElementById('devicePill');
+    const emptyState = document.getElementById('emptyState');
+    const resultsGrid = document.getElementById('resultsGrid');
+    const modal = document.getElementById('modal');
+    const modalContent = document.getElementById('modalContent');
+    const modalImg = document.getElementById('modalImg');
+    const modalPath = document.getElementById('modalPath');
+    const copyPathBtn = document.getElementById('copyPathBtn');
+    const revealBtn = document.getElementById('revealBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+
+    let pollTimer = null;
+    let currentResults = [];
+    let currentModalIndex = -1;
+
+    function showError(msg) {
+      if (!msg) {
+        alertBox.textContent = '';
+        alertBox.classList.remove('show');
+        return;
+      }
+      alertBox.textContent = msg;
+      alertBox.classList.add('show');
+    }
+
+    async function fetchJson(url, options) {
+      const res = await fetch(url, options);
+      let data = null;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch (_) {
+        data = { detail: text || 'پاسخ نامعتبر از سرور دریافت شد.' };
+      }
+      if (!res.ok) {
+        throw new Error(data.detail || `خطای سرور (${res.status})`);
+      }
+      return data;
+    }
+
+    function setIndexingUI(job, data) {
+      const running = Boolean(job && job.running);
+      indexBtn.disabled = running;
+      browseBtn.disabled = running;
+      indexBtn.textContent = running ? 'در حال ایندکس...' : 'ایندکس پوشه';
+      cancelBtn.style.display = running ? 'inline-block' : 'none';
+
+      if (running) {
+        progressWrap.classList.add('active');
+        const indeterminate = job.phase === 'scanning' || job.phase === 'loading_model';
+        progressBar.classList.toggle('indeterminate', indeterminate);
+        if (!indeterminate) {
+          progressBar.style.width = `${Math.max(0, Math.min(100, job.percent || 0))}%`;
+        }
+        progressDetail.textContent = job.message || 'در حال پردازش...';
+        progressPercent.textContent = indeterminate ? '' : `${job.percent || 0}%`;
+        statusText.textContent = job.message || 'در حال ایندکس پوشه...';
+      } else {
+        progressWrap.classList.remove('active');
+        progressBar.classList.remove('indeterminate');
+        cancelBtn.disabled = false;
+
+        if (job && job.phase === 'error' && job.error) {
+          showError(job.error);
+        }
+        if (job && (job.phase === 'done' || job.phase === 'cancelled') && job.message) {
+          statusText.textContent = job.message;
+        } else if (data) {
+          statusText.textContent = data.ready
+            ? `آماده جستجو (${data.indexed_count.toLocaleString('fa-IR')} عکس ایندکس شده)`
+            : 'هنوز پوشه‌ای ایندکس نشده است. مسیر پوشه را وارد یا انتخاب کنید.';
+        }
+      }
+    }
+
+    function startPolling() {
+      if (pollTimer) return;
+      pollTimer = setInterval(async () => {
+        try {
+          const data = await fetchJson('/api/status');
+          setIndexingUI(data.indexing, data);
+          if (!data.indexing || !data.indexing.running) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+          }
+        } catch (_) {
+          // Keep polling quietly on transient hiccups
+        }
+      }, 750);
+    }
+
+    async function checkStatus() {
+      try {
+        const data = await fetchJson('/api/status');
+        if (data.device) {
+          devicePill.textContent = `Engine: ${data.device.toUpperCase()}`;
+          devicePill.style.display = 'inline-block';
+        }
+        setIndexingUI(data.indexing, data);
+        if (data.indexing && data.indexing.running) {
+          startPolling();
+        }
+      } catch (_) {
+        statusText.textContent = 'خطا در ارتباط با سرور محلی';
+      }
+    }
+
+    async function pickFolder() {
+      showError('');
+      browseBtn.disabled = true;
+      const prevText = browseBtn.textContent;
+      browseBtn.textContent = 'در حال باز کردن…';
+      try {
+        const data = await fetchJson('/api/pick-folder', { method: 'POST' });
+        if (data.folder_path) {
+          folderInput.value = data.folder_path;
+        }
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        browseBtn.disabled = false;
+        browseBtn.textContent = prevText;
+      }
+    }
+
+    async function indexFolder() {
+      showError('');
+      const rawFolder = folderInput.value.trim().replace(/^["']+|["']+$/g, '');
+      folderInput.value = rawFolder;
+      if (!rawFolder) {
+        showError('لطفاً مسیر پوشه عکس‌ها را وارد یا انتخاب کنید.');
+        folderInput.focus();
+        return;
+      }
+
+      indexBtn.disabled = true;
+      indexBtn.textContent = 'در حال شروع...';
+
+      try {
+        await fetchJson('/api/index', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            folder_path: rawFolder,
+            append: appendCheck.checked,
+            force_reindex: forceCheck.checked,
+          }),
+        });
+        forceCheck.checked = false;
+        setIndexingUI({ running: true, phase: 'scanning', message: 'در حال اسکن پوشه...' }, null);
+        startPolling();
+      } catch (e) {
+        showError(e.message);
+        indexBtn.disabled = false;
+        indexBtn.textContent = 'ایندکس پوشه';
+        checkStatus();
+      }
+    }
+
+    async function cancelIndexing() {
+      cancelBtn.disabled = true;
+      try {
+        await fetchJson('/api/index/cancel', { method: 'POST' });
+      } catch (e) {
+        showError(e.message);
+        cancelBtn.disabled = false;
+      }
+    }
+
+    function renderResults(results) {
+      resultsGrid.replaceChildren();
+      currentResults = results || [];
+
+      if (currentResults.length === 0) {
+        emptyState.classList.add('show');
+        return;
+      }
+      emptyState.classList.remove('show');
+
+      const fragment = document.createDocumentFragment();
+      currentResults.forEach((item, idx) => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.addEventListener('click', () => openModalAt(idx));
+
+        const encodedPath = encodeURIComponent(item.path);
+        const ver = item.v ? `&v=${encodeURIComponent(item.v)}` : '';
+        const thumbUrl = `/api/thumbnail?path=${encodedPath}${ver}`;
+        const fullUrl = `/api/image?path=${encodedPath}${ver}`;
+
+        const img = document.createElement('img');
+        img.src = thumbUrl;
+        img.loading = 'lazy';
+        img.decoding = 'async';
+        img.alt = item.filename;
+        img.addEventListener('error', () => {
+          if (img.dataset.fallback !== '1') {
+            img.dataset.fallback = '1';
+            img.src = fullUrl;
+          }
+        });
+
+        const info = document.createElement('div');
+        info.className = 'card-info';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'filename';
+        nameSpan.title = item.path;
+        nameSpan.textContent = item.filename;
+
+        const badge = document.createElement('span');
+        badge.className = 'badge';
+        badge.textContent = `${item.score}%`;
+
+        info.appendChild(nameSpan);
+        info.appendChild(badge);
+        card.appendChild(img);
+        card.appendChild(info);
+        fragment.appendChild(card);
+      });
+
+      resultsGrid.appendChild(fragment);
+    }
+
+    async function searchImages() {
+      showError('');
+      const q = searchInput.value.trim();
+      if (!q) {
+        searchInput.focus();
+        return;
+      }
+
+      const topK = parseInt(topKSelect.value, 10) || 24;
+      searchBtn.disabled = true;
+      searchBtn.textContent = 'در حال جستجو...';
+
+      try {
+        const data = await fetchJson(`/api/search?q=${encodeURIComponent(q)}&top_k=${topK}`);
+        renderResults(data.results);
+        statusText.textContent = `نمایش ${data.results.length.toLocaleString('fa-IR')} نتیجه برتر برای «${data.query}» (از ${data.total_indexed.toLocaleString('fa-IR')} عکس)`;
+      } catch (e) {
+        showError(e.message);
+      } finally {
+        searchBtn.disabled = false;
+        searchBtn.textContent = 'جستجو';
+      }
+    }
+
+    function openModalAt(index) {
+      if (index < 0 || index >= currentResults.length) return;
+      currentModalIndex = index;
+      const item = currentResults[index];
+      const ver = item.v ? `&v=${encodeURIComponent(item.v)}` : '';
+      modalImg.src = '';
+      modalImg.alt = item.filename;
+      modalImg.src = `/api/image?path=${encodeURIComponent(item.path)}${ver}`;
+      modalPath.textContent = item.path;
+      copyPathBtn.textContent = 'کپی مسیر';
+      modal.classList.add('open');
+    }
+
+    function closeModal() {
+      modal.classList.remove('open');
+      modalImg.src = '';
+      currentModalIndex = -1;
+    }
+
+    async function copyCurrentPath() {
+      if (currentModalIndex < 0) return;
+      const pathText = currentResults[currentModalIndex].path;
+      try {
+        await navigator.clipboard.writeText(pathText);
+        copyPathBtn.textContent = 'کپی شد ✓';
+        setTimeout(() => { copyPathBtn.textContent = 'کپی مسیر'; }, 1600);
+      } catch (_) {
+        showError('امکان کپی خودکار مسیر وجود نداشت.');
+      }
+    }
+
+    async function revealCurrentFile() {
+      if (currentModalIndex < 0) return;
+      const pathText = currentResults[currentModalIndex].path;
+      try {
+        await fetchJson('/api/reveal', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: pathText }),
+        });
+      } catch (e) {
+        showError(e.message);
+      }
+    }
+
+    // Event bindings
+    browseBtn.addEventListener('click', pickFolder);
+    indexBtn.addEventListener('click', indexFolder);
+    cancelBtn.addEventListener('click', cancelIndexing);
+    searchBtn.addEventListener('click', searchImages);
+    folderInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') indexFolder(); });
+    searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') searchImages(); });
+    topKSelect.addEventListener('change', () => { if (searchInput.value.trim()) searchImages(); });
+
+    modal.addEventListener('click', closeModal);
+    modalContent.addEventListener('click', (e) => e.stopPropagation());
+    closeModalBtn.addEventListener('click', closeModal);
+    copyPathBtn.addEventListener('click', copyCurrentPath);
+    revealBtn.addEventListener('click', revealCurrentFile);
+
+    document.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('open')) return;
+      if (e.key === 'Escape') closeModal();
+      else if (e.key === 'ArrowLeft') openModalAt(Math.min(currentResults.length - 1, currentModalIndex + 1));
+      else if (e.key === 'ArrowRight') openModalAt(Math.max(0, currentModalIndex - 1));
+    });
+
+    checkStatus();
+  </script>
+</body>
+</html>

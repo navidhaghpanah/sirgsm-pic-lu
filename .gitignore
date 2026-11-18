@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+dist/
+build/
+release/
+image_index_cache.npz
+image_meta_cache.json
+sirgsm_pic_lu.log
+models/
+.venv/
+.venv-build/
+venv/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,107 @@
+name: Build Windows Portable EXE
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+    inputs:
+      build_mode:
+        description: 'Packaging mode (onedir = fast launch ZIP, onefile = single .exe)'
+        required: false
+        default: 'onedir'
+        type: choice
+        options:
+          - onedir
+          - onefile
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    env:
+      PIP_DISABLE_PIP_VERSION_CHECK: '1'
+      SIRGSM_ONEFILE: ${{ github.event.inputs.build_mode == 'onefile' && '1' || '0' }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11 (x64)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          architecture: 'x64'
+          cache: 'pip'
+          cache-dependency-path: requirements.txt
+
+      - name: Install CPU-only PyTorch & dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          # Install stable CPU-only PyTorch 2.8.0 (~180 MB vs ~2.5 GB CUDA; avoids PyTorch 2.9+ WinError 1114)
+          pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements.txt
+          pip install "pyinstaller>=6.10.0"
+
+      - name: Build Portable EXE with PyInstaller
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean Sirgsm-Pic-Lu.spec
+
+      - name: Smoke-test compiled Windows EXE
+        shell: pwsh
+        run: |
+          if ($env:SIRGSM_ONEFILE -eq '1') {
+            $exe = "dist\Sirgsm-Pic-Lu.exe"
+          } else {
+            $exe = "dist\Sirgsm-Pic-Lu\Sirgsm-Pic-Lu.exe"
+          }
+          if (-not (Test-Path $exe)) {
+            throw "Expected executable not found at $exe"
+          }
+          & $exe --self-test
+          if ($LASTEXITCODE -ne 0) {
+            throw "Compiled EXE failed --self-test with exit code $LASTEXITCODE"
+          }
+
+      - name: Package Portable Artifact
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release | Out-Null
+          if ($env:SIRGSM_ONEFILE -eq '1') {
+            Copy-Item "dist\Sirgsm-Pic-Lu.exe" "release\Sirgsm-Pic-Lu.exe"
+            $sizeMB = [math]::Round((Get-Item "release\Sirgsm-Pic-Lu.exe").Length / 1MB, 1)
+            Write-Host "Packaged single-file EXE: release\Sirgsm-Pic-Lu.exe ($sizeMB MB)"
+          } else {
+            Copy-Item "README.md" "dist\Sirgsm-Pic-Lu\README.md"
+            $zipPath = "release\Sirgsm-Pic-Lu-Windows-Portable.zip"
+            7z a -tzip -mx=7 $zipPath ".\dist\Sirgsm-Pic-Lu" | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+              throw "7z archiving failed with exit code $LASTEXITCODE"
+            }
+            $sizeMB = [math]::Round((Get-Item $zipPath).Length / 1MB, 1)
+            Write-Host "Packaged portable ZIP: $zipPath ($sizeMB MB)"
+          }
+
+      - name: Upload Portable Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Sirgsm-Pic-Lu-Windows-Portable
+          path: release/*
+          if-no-files-found: error
+          compression-level: 0
+
+      - name: Publish GitHub Release (on v* tags)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*
+          generate_release_notes: true
